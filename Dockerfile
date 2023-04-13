@@ -1,14 +1,24 @@
-FROM python:3.7-alpine
+FROM nginxinc/nginx-unprivileged:1-alpine 
+
 LABEL maintainer="64kb"
 
-ENV PYTHONUNBUFFERED 1
+COPY ./default.conf.tpl /etc/nginx/default.conf.tpl
+COPY ./uwsgi_params /etc/nginx/uwsgi_params
 
-COPY ./requirements.txt /requirements.txt
-RUN pip install -r requirements.txt
+ENV LISTEN_PORT=8000
+ENV APP_HOST=app
+ENV APP_PORT=9000
 
-RUN mkdir /app
-WORKDIR /app
-COPY ./app /app
+USER root
 
-RUN adduser -D user
-USER user
+RUN mkdir -p /vol/static
+RUN chmod 755 /vol/static
+RUN touch /etc/nginx/conf.d/default.conf
+RUN chown nginx:nginx /etc/nginx/conf.d/default.conf
+
+COPY ./entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+USER nginx
+
+CMD [ "/entrypoint.sh" ]
